@@ -2,6 +2,11 @@
 A simple timer application built with GTK3. The timer allows you to manage sessions with customizable durations.
 
 ## Features
+
+
+https://github.com/galib45/timer/assets/25382636/9e97485f-ecfd-4dab-9d73-ac3f2acacdc7
+
+
 - Start/Pause Timer: Press the `Space` key to start or pause the timer.
 - Reset Timer: Press the `r` key to reset the timer.
 - Adjust Session Duration:
@@ -22,7 +27,7 @@ sudo apt install libgtk-3-0
 ```
 git clone https://github.com/galib45/timer.git
 cd timer
-gcc `pkg-config --cflags gtk+-3.0` -o example-0 example-0.c `pkg-config --libs gtk+-3.0`
+gcc `pkg-config --cflags gtk+-3.0` -o timer timer.c `pkg-config --libs gtk+-3.0`
 ```
 ### Run the application:
 ```
