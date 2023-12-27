@@ -15,17 +15,17 @@ A simple timer application built with GTK3. The timer allows you to manage sessi
 ### Prerequisites
 Make sure you have the following dependencies installed:
 ```
-  sudo apt update
-  sudo apt install libgtk-3-0
+sudo apt update
+sudo apt install libgtk-3-0
 ```
 ### Build Steps
 ```
-  git clone https://github.com/galib45/timer.git
-  cd timer
+git clone https://github.com/galib45/timer.git
+cd timer
 ```
 ### Run the application:
 ```
-  ./timer
+./timer
 ```
 ## Configuration
 The last updated session duration is stored in the "timer.config" file when quitting the app.
