@@ -62,16 +62,14 @@ gboolean key_release(GtkWidget* self, GdkEventKey* event, gpointer user_data) {
 	switch(event->keyval) {
 		case GDK_KEY_space:
 		case GDK_KEY_KP_Space:
-			if (seconds_left > 0) {
-				if (timer_state != RUNNING) {
-					timer_state = RUNNING;
-					text_opacity = 100;
-				} else {
-					timer_state = PAUSED;
-					text_opacity = 70;
-				}
-				update_label();
+			if (timer_state != RUNNING) {
+				timer_state = RUNNING;
+				text_opacity = 100;
+			} else {
+				timer_state = PAUSED;
+				text_opacity = 70;
 			}
+			update_label();
 			break;
 		case GDK_KEY_R:
 		case GDK_KEY_r:
@@ -120,9 +118,7 @@ gboolean key_release(GtkWidget* self, GdkEventKey* event, gpointer user_data) {
 				update_label();
 			}
 			break;
-		default:
-			g_print("no bindings for this key\n");
-			return FALSE;
+		
 	}
 	return TRUE;
 }
@@ -137,8 +133,29 @@ gboolean delete(GtkWidget* self, GdkEvent* event, gpointer user_data) {
 }
 
 
+gboolean label_clicked (GtkWidget* self, GdkEventButton* event, gpointer user_data) {
+	if (event->button == 1) {
+		switch(timer_state) {
+			case RESET:
+			case PAUSED:
+				timer_state = RUNNING;
+				text_opacity = 100;
+				update_label();
+				break;
+			case RUNNING:
+				timer_state = PAUSED;
+				text_opacity = 70;
+				update_label();
+				break;
+		}
+	}
+	return TRUE;
+}
+
+
 int main (int argc, char **argv) {
   GtkWidget* window;
+  GtkWidget* event_box;
 
 	gtk_init(&argc, &argv);
 	
@@ -149,6 +166,8 @@ int main (int argc, char **argv) {
 	g_signal_connect(window, "key_release_event", G_CALLBACK(key_release), NULL);
 	g_signal_connect(window, "delete-event", G_CALLBACK(delete), NULL);
 	
+	event_box = gtk_event_box_new();
+	gtk_container_add(GTK_CONTAINER(window), event_box);
 
 	// load config from file
 	FILE* file = fopen(config_file_path, "r");
@@ -160,7 +179,8 @@ int main (int argc, char **argv) {
 	// initialize global variables	
 	label_text = g_string_new("");
 	label = gtk_label_new(NULL);
-	gtk_container_add(GTK_CONTAINER(window), label);			
+	g_signal_connect(event_box, "button-release-event", G_CALLBACK(label_clicked), NULL);
+	gtk_container_add(GTK_CONTAINER(event_box), label);			
 	reset_timer();
 
 	g_timeout_add_seconds(1, timer_tick, NULL);
