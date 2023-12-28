@@ -21,13 +21,13 @@ https://github.com/galib45/timer/assets/25382636/9e97485f-ecfd-4dab-9d73-ac3f2ac
 Make sure you have the following dependencies installed:
 ```
 sudo apt update
-sudo apt install libgtk-3-0
+sudo apt install libgtk-3-dev libnotify-dev
 ```
 ### Build Steps
 ```
 git clone https://github.com/galib45/timer.git
 cd timer
-gcc `pkg-config --cflags gtk+-3.0` -o timer timer.c `pkg-config --libs gtk+-3.0`
+gcc $(pkg-config --cflags gtk+-3.0 libnotify) -o timer timer.c $(pkg-config --libs gtk+-3.0 libnotify)
 ```
 ### Run the application:
 ```

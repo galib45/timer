@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <gtk/gtk.h>
+#include <libnotify/notify.h>
 
 enum State {
 	RUNNING,
@@ -15,9 +16,17 @@ int seconds_left;
 int text_opacity;
 const gchar* format;
 
-GtkApplication *app;
 GtkWidget *label;
 GString* label_text;
+
+void notify(const char* message) {
+	notify_init ("Timer");
+	NotifyNotification* notification;
+	notification = notify_notification_new("Timer", message, "dialog-information");
+	notify_notification_show (notification, NULL);
+	g_object_unref(notification);
+	notify_uninit();
+}
 
 void update_label() {
 	int seconds = seconds_left % 60;
@@ -29,10 +38,22 @@ void update_label() {
 	gtk_label_set_markup(GTK_LABEL(label), label_text->str);
 }
 
+void reset_timer() {
+	timer_state = RESET;
+	seconds_left = config_session_minutes * 60;
+	text_opacity = 70;
+	update_label();
+}
+
 gboolean timer_tick(gpointer user_data) {
 	if (timer_state == RUNNING) {
-		seconds_left--;
-		update_label();
+		if (seconds_left == 0) {
+			reset_timer();
+			notify("Session Completed");
+		} else {
+			seconds_left--;
+			update_label();
+		}
 	} 	
 	return TRUE;
 }
@@ -41,21 +62,20 @@ gboolean key_release(GtkWidget* self, GdkEventKey* event, gpointer user_data) {
 	switch(event->keyval) {
 		case GDK_KEY_space:
 		case GDK_KEY_KP_Space:
-			if (timer_state != RUNNING) {
-				timer_state = RUNNING;
-				text_opacity = 100;
-			} else {
-				timer_state = PAUSED;
-				text_opacity = 70;
+			if (seconds_left > 0) {
+				if (timer_state != RUNNING) {
+					timer_state = RUNNING;
+					text_opacity = 100;
+				} else {
+					timer_state = PAUSED;
+					text_opacity = 70;
+				}
 				update_label();
 			}
 			break;
 		case GDK_KEY_R:
 		case GDK_KEY_r:
-			timer_state = RESET;
-			text_opacity = 70;
-			seconds_left = config_session_minutes * 60;
-			update_label();
+			reset_timer();
 			break;
 		case GDK_KEY_Q:
 		case GDK_KEY_q:
@@ -64,7 +84,7 @@ gboolean key_release(GtkWidget* self, GdkEventKey* event, gpointer user_data) {
 				fprintf(file, "%d", config_session_minutes);
 				fclose(file);
 			}
-			g_application_quit(G_APPLICATION(app));
+			gtk_main_quit();
 			break;
 		case GDK_KEY_uparrow:
 		case GDK_KEY_Up:
@@ -116,14 +136,19 @@ gboolean delete(GtkWidget* self, GdkEvent* event, gpointer user_data) {
 	return FALSE;
 }
 
-void activate (GtkApplication *app, gpointer user_data) {
-  GtkWidget *window;
 
-  window = gtk_application_window_new (app);
+int main (int argc, char **argv) {
+  GtkWidget* window;
+
+	gtk_init(&argc, &argv);
+	
+	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title (GTK_WINDOW (window), "Timer");
   gtk_window_set_default_size (GTK_WINDOW (window), 400, 200);
-	g_signal_connect (window, "key_release_event", G_CALLBACK(key_release), NULL);
-	g_signal_connect (window, "delete-event", G_CALLBACK(delete), NULL);
+	g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+	g_signal_connect(window, "key_release_event", G_CALLBACK(key_release), NULL);
+	g_signal_connect(window, "delete-event", G_CALLBACK(delete), NULL);
+	
 
 	// load config from file
 	FILE* file = fopen(config_file_path, "r");
@@ -132,26 +157,15 @@ void activate (GtkApplication *app, gpointer user_data) {
 		fclose(file);
 	}
 	
-	// initialize global variables
-	timer_state = RESET;
-	seconds_left = config_session_minutes * 60;
-	text_opacity = 70;
+	// initialize global variables	
 	label_text = g_string_new("");
 	label = gtk_label_new(NULL);
 	gtk_container_add(GTK_CONTAINER(window), label);			
-	update_label();
-	
+	reset_timer();
+
 	g_timeout_add_seconds(1, timer_tick, NULL);
-  gtk_widget_show_all(window);
-}
 
-int main (int argc, char **argv) {
-  int status;
-
-  app = gtk_application_new ("org.galib.timer", G_APPLICATION_DEFAULT_FLAGS);
-  g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
-  status = g_application_run (G_APPLICATION (app), argc, argv);
-  g_object_unref (app);
-
-  return status;
+	gtk_widget_show_all(window);
+	gtk_main();
+	return 0;
 }
