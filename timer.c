@@ -179,7 +179,7 @@ int main (int argc, char **argv) {
 	// initialize global variables	
 	label_text = g_string_new("");
 	label = gtk_label_new(NULL);
-	g_signal_connect(event_box, "button-release-event", G_CALLBACK(label_clicked), NULL);
+	g_signal_connect_swapped(event_box, "button-release-event", G_CALLBACK(label_clicked), label);
 	gtk_container_add(GTK_CONTAINER(event_box), label);			
 	reset_timer();
 
