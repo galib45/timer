@@ -19,6 +19,23 @@ const gchar* format;
 GtkWidget *label;
 GString* label_text;
 
+struct Rectangle {
+	int x;
+	int y;
+	int width;
+	int height;
+};
+
+typedef struct Rectangle Rectangle;
+
+Rectangle get_label_rect(GtkLabel* label) {
+	Rectangle rect = {0};
+	gtk_label_get_layout_offsets(label, &rect.x, &rect.y);
+	gtk_widget_get_preferred_width (GTK_WIDGET(label), &rect.width, NULL);
+	gtk_widget_get_preferred_height (GTK_WIDGET(label), &rect.height, NULL);
+	return rect;
+}
+
 void notify(const char* message) {
 	notify_init ("Timer");
 	NotifyNotification* notification;
@@ -133,8 +150,14 @@ gboolean delete(GtkWidget* self, GdkEvent* event, gpointer user_data) {
 }
 
 
-gboolean label_clicked (GtkWidget* self, GdkEventButton* event, gpointer user_data) {
-	if (event->button == 1) {
+gboolean window_clicked (GtkWidget* self, GdkEventButton* event, gpointer user_data) {
+	gboolean within_label = FALSE;
+	Rectangle rect = get_label_rect(GTK_LABEL(label));
+	if ((event->x > rect.x && event->x < rect.x + rect.width) 
+			&& (event->y > rect.y && event->y < rect.y + rect.height))
+		within_label = TRUE;
+
+	if (event->button == 1 && within_label) {
 		switch(timer_state) {
 			case RESET:
 			case PAUSED:
@@ -165,9 +188,7 @@ int main (int argc, char **argv) {
 	g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 	g_signal_connect(window, "key_release_event", G_CALLBACK(key_release), NULL);
 	g_signal_connect(window, "delete-event", G_CALLBACK(delete), NULL);
-	
-	event_box = gtk_event_box_new();
-	gtk_container_add(GTK_CONTAINER(window), event_box);
+	g_signal_connect(window, "button-release-event", G_CALLBACK(window_clicked), NULL);
 
 	// load config from file
 	FILE* file = fopen(config_file_path, "r");
@@ -179,8 +200,7 @@ int main (int argc, char **argv) {
 	// initialize global variables	
 	label_text = g_string_new("");
 	label = gtk_label_new(NULL);
-	g_signal_connect_swapped(event_box, "button-release-event", G_CALLBACK(label_clicked), label);
-	gtk_container_add(GTK_CONTAINER(event_box), label);			
+	gtk_container_add(GTK_CONTAINER(window), label);
 	reset_timer();
 
 	g_timeout_add_seconds(1, timer_tick, NULL);
